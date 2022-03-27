@@ -58,7 +58,7 @@ namespace pbuddy.ShaderUtility.EditorScripts
             lines.ReplaceTemplates(replacements);
             
             IGPUFunctionArguments functionArguments = functionUnderTestToTest.FunctionArguments;
-            (Section section, string[] lines)[] addToSectionAndRemoveIdentifiers =
+            (SectionIdentifiers section, string[] lines)[] addToSectionAndRemoveIdentifiers =
             {
                 (InputBufferDeclarationSectionIdentifiers, functionArguments.ToInputBufferDeclarationsString()),
                 (InOutVariableDeclarationSectionIdentifiers, functionArguments.ToInOutVariableDeclarationsString()),
@@ -67,7 +67,7 @@ namespace pbuddy.ShaderUtility.EditorScripts
                 (ArrayVariableDeclarationSectionIdentifiers, functionArguments.ToArrayVariableDeclarationsString()),
             };
             
-            foreach ((Section section, string[] lines) sectionAddition in addToSectionAndRemoveIdentifiers)
+            foreach ((SectionIdentifiers section, string[] lines) sectionAddition in addToSectionAndRemoveIdentifiers)
             {
                 if (sectionAddition.lines == null || sectionAddition.lines.Length == 0)
                 {
@@ -86,13 +86,13 @@ namespace pbuddy.ShaderUtility.EditorScripts
         }
         
         #region Template Sections
-        private static readonly Section SaveDataSectionIdentifiers = new Section("BEGIN SAVE DATA SECTION", "END SAVE DATA SECTION");
-        private static readonly Section InputBufferDeclarationSectionIdentifiers = new Section("BEGIN INPUT SECTION", "END INPUT SECTION");
-        private static readonly Section OutputBufferDeclarationSectionIdentifiers = new Section("BEGIN OUTPUT SECTION", "END OUTPUT SECTION");
-        private static readonly Section InOutVariableDeclarationSectionIdentifiers = new Section("BEGIN DECLARE IN/OUT VARIABLES", "END DECLARE IN/OUT VARIABLES");
-        private static readonly Section InOutVariableCollectionSectionIdentifiers = new Section("BEGIN COLLECT IN/OUT VARIABLES", "END COLLECT IN/OUT VARIABLES");
-        private static readonly Section ArrayVariableDeclarationSectionIdentifiers = new Section("BEGIN DECLARE ARRAY VARIABLES", "END DECLARE ARRAY VARIABLES");
-        private static readonly Section LengthDeclarationSectionIdentifiers = new Section("BEGIN DECLARE LENGTHS", "END DECLARE LENGTHS");
+        private static readonly SectionIdentifiers SaveDataSectionIdentifiers = new SectionIdentifiers("BEGIN SAVE DATA SECTION", "END SAVE DATA SECTION");
+        private static readonly SectionIdentifiers InputBufferDeclarationSectionIdentifiers = new SectionIdentifiers("BEGIN INPUT SECTION", "END INPUT SECTION");
+        private static readonly SectionIdentifiers OutputBufferDeclarationSectionIdentifiers = new SectionIdentifiers("BEGIN OUTPUT SECTION", "END OUTPUT SECTION");
+        private static readonly SectionIdentifiers InOutVariableDeclarationSectionIdentifiers = new SectionIdentifiers("BEGIN DECLARE IN/OUT VARIABLES", "END DECLARE IN/OUT VARIABLES");
+        private static readonly SectionIdentifiers InOutVariableCollectionSectionIdentifiers = new SectionIdentifiers("BEGIN COLLECT IN/OUT VARIABLES", "END COLLECT IN/OUT VARIABLES");
+        private static readonly SectionIdentifiers ArrayVariableDeclarationSectionIdentifiers = new SectionIdentifiers("BEGIN DECLARE ARRAY VARIABLES", "END DECLARE ARRAY VARIABLES");
+        private static readonly SectionIdentifiers LengthDeclarationSectionIdentifiers = new SectionIdentifiers("BEGIN DECLARE LENGTHS", "END DECLARE LENGTHS");
         #endregion Template Sections
 
         #region Template Identifiers
