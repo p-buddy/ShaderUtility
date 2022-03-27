@@ -21,7 +21,7 @@ namespace pbuddy.ShaderUtility.EditModeTests
     return float3(before, before, before);
 }}";
             
-            DebugAndTestGPUCodeUtility.GenerateCgIncFile(gpuFunctionToTest, out string fileName);
+            DebugAndTestGPUCodeUtility.GenerateCgFile(gpuFunctionToTest, out string fileName);
 
             var input = new NonspecificNamedGPUFunctionArguments
             {
@@ -39,12 +39,12 @@ namespace pbuddy.ShaderUtility.EditModeTests
             const int testValue = 3;
 
             string gpuFunctionToTest =
-@$"float3 SomeFunction(int i)
+@"float3 SomeFunction(int i)
 {{
     return float3(i, i, i);
 }}";
             
-            DebugAndTestGPUCodeUtility.GenerateCgIncFile(gpuFunctionToTest, out string fileName);
+            DebugAndTestGPUCodeUtility.GenerateCgFile(gpuFunctionToTest, out string fileName);
 
             var input = new NonspecificNamedGPUFunctionArguments
             {
@@ -54,7 +54,7 @@ namespace pbuddy.ShaderUtility.EditModeTests
             input.SendToCgFunctionAndGetOutput(fileName, "SomeFunction", out float3 output);
             Assert.AreEqual(output, new float3(testValue, testValue, testValue));
         }
-        
+   
         [Test]
         public void TestFunctionWithOutVariable()
         {
@@ -66,7 +66,7 @@ namespace pbuddy.ShaderUtility.EditModeTests
     return float3({valueToSet}, {valueToSet}, {valueToSet});
 }}";
             
-            DebugAndTestGPUCodeUtility.GenerateCgIncFile(gpuFunctionToTest, out string fileName);
+            DebugAndTestGPUCodeUtility.GenerateCgFile(gpuFunctionToTest, out string fileName);
 
             var input = new NonspecificNamedGPUFunctionArguments
             {
@@ -84,13 +84,14 @@ namespace pbuddy.ShaderUtility.EditModeTests
             const string functionName = "ReturnLastElement";
             const int valueToSet = 10;
             const int arraySize = 5;
+            
             string gpuFunctionToTest = 
 @$"int {functionName}(in int i[{arraySize}])
 {{
     return i[{arraySize - 1}];
 }}";
             
-            DebugAndTestGPUCodeUtility.GenerateCgIncFile(gpuFunctionToTest, out string fileName);
+            DebugAndTestGPUCodeUtility.GenerateCgFile(gpuFunctionToTest, out string fileName);
 
             var input = new NonspecificNamedGPUFunctionArguments
             {
@@ -107,19 +108,21 @@ namespace pbuddy.ShaderUtility.EditModeTests
             const string functionName = "SquareAndReturnLast";
             const int arraySize = 5;
             const int valueToSet = 10;
+            
             string gpuFunctionToTest = 
-@$"int {functionName}(inout int i[{arraySize}])
+@$"int {functionName}(inout int arr[{arraySize}])
 {{
-    const int last = i[{arraySize - 1}];
-    i[{arraySize - 1}] = last * last;
-    return i[{arraySize - 1}];
+    const int last = arr[{arraySize - 1}];
+    arr[{arraySize - 1}] = last * last;
+    return arr[{arraySize - 1}];
 }}";
             
-            DebugAndTestGPUCodeUtility.GenerateCgIncFile(gpuFunctionToTest, out string fileName);
+            DebugAndTestGPUCodeUtility.GenerateCgFile(gpuFunctionToTest, out string fileName);
 
+            int[] values = Enumerable.Repeat(valueToSet, arraySize).ToArray();
             var input = new NonspecificNamedGPUFunctionArguments
             {
-                Argument0 = GPUFunctionArgument.InOut(Enumerable.Repeat(valueToSet, arraySize).ToArray())
+                Argument0 = GPUFunctionArgument.InOut(values)
             };
 
             int squared = valueToSet * valueToSet;

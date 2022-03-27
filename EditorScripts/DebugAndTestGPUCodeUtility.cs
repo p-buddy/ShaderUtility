@@ -16,6 +16,9 @@ namespace pbuddy.ShaderUtility.EditorScripts
     // TODO:
     // - handle multiple shaders of same name
     // - validate inputs
+    /// <summary>
+    /// 
+    /// </summary>
     public static class DebugAndTestGPUCodeUtility
     {
         private static readonly string GeneratedComputeShadersDirectory = FileGenerator.GetPathToSubDirectory("ComputeShaders");
@@ -32,7 +35,7 @@ namespace pbuddy.ShaderUtility.EditorScripts
         
         private static readonly Dictionary<string, string> FullPathToCgFileByName;
         private static readonly Dictionary<int, string> GeneratedCgFileByHash;
-        private static readonly Dictionary<TestableGPUFunction, ComputeShader> ComputeShaderByFunctionItTests;
+        private static readonly Dictionary<GPUFunctionUnderTest, ComputeShader> ComputeShaderByFunctionItTests;
 
         static DebugAndTestGPUCodeUtility()
         {
@@ -67,11 +70,11 @@ namespace pbuddy.ShaderUtility.EditorScripts
                 string[] computeShaderFiles = Directory.GetFiles(GeneratedComputeShadersDirectory)
                                                        .Where(file => !Path.GetExtension(file).Contains("meta"))
                                                        .ToArray();
-                ComputeShaderByFunctionItTests = new Dictionary<TestableGPUFunction, ComputeShader>(computeShaderFiles.Length);
+                ComputeShaderByFunctionItTests = new Dictionary<GPUFunctionUnderTest, ComputeShader>(computeShaderFiles.Length);
                 foreach (string preBuiltComputeShader in computeShaderFiles)
                 {
                     string pathRelativeToProjectFolder = preBuiltComputeShader.GetPathRelativeToProject();
-                    if (ComputeShaderForTesting.TryGetTestedFunctionFromFile(preBuiltComputeShader, out TestableGPUFunction key) &&
+                    if (ComputeShaderForTesting.TryGetTestedFunctionFromFile(preBuiltComputeShader, out GPUFunctionUnderTest key) &&
                         File.Exists(key.FullPathToFileContainingFunction))
                     {
                         var value = (ComputeShader)AssetDatabase.LoadAssetAtPath(pathRelativeToProjectFolder, typeof(ComputeShader));
@@ -84,17 +87,18 @@ namespace pbuddy.ShaderUtility.EditorScripts
                     }
                 }
             }
-            ComputeShaderByFunctionItTests ??= new Dictionary<TestableGPUFunction, ComputeShader>();
+            ComputeShaderByFunctionItTests ??= new Dictionary<GPUFunctionUnderTest, ComputeShader>();
             #endregion Collect (Already) Generated Compute Shaders
         }
 
-        private static void CollectAlreadyGeneratedCgFiles()
-        {
-            
-        }
-        
-        public static void GenerateCgIncFile(string contents,
-                                             out string generatedFileName)
+        /// <summary>
+        /// Generate a new Cg ("C for Graphics") file that can be referenced by other cg/shader code
+        /// (like as an include file)
+        /// </summary>
+        /// <param name="contents"><see cref="string"/> containing the Cg code to populate the file</param>
+        /// <param name="generatedFileName">Full path to generated file</param>
+        public static void GenerateCgFile(string contents,
+                                          out string generatedFileName)
         {
             Directory.CreateDirectory(GeneratedCgFilesDirectory);
             int hash = contents.GetHashCode();
@@ -105,23 +109,31 @@ namespace pbuddy.ShaderUtility.EditorScripts
                 return;
             }
             
-            generatedFileName = $"GeneratedCgIncludeFile_{hash}";
+            generatedFileName = $"GeneratedCgFile_{hash}";
             string fullPathToGeneratedFile = Path.Combine(GeneratedCgFilesDirectory, $"{generatedFileName}{CgExtension}");
             using var file = new StreamWriter(File.Create(fullPathToGeneratedFile));
             file.Write(contents);
             FullPathToCgFileByName[generatedFileName] = fullPathToGeneratedFile;
         }
 
-        public static void SendToCgFunctionAndGetOutput<TOutput>(this IGPUFunctionArguments inputArguments, 
-                                                                 string cgFile,
-                                                                 string functionName,
-                                                                 out TOutput output)
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="inputArguments"></param>
+        /// <param name="cgFile"></param>
+        /// <param name="functionName"></param>
+        /// <param name="output"></param>
+        /// <typeparam name="TOutputType"></typeparam>
+        public static void SendArgumentsToCgFunctionAndGetOutput<TOutputType>(IGPUFunctionArguments inputArguments,
+                                                                              string cgFile,
+                                                                              string functionName,
+                                                                              out TOutputType output)
         {
-            typeof(TOutput).AssertIsValidShaderType();
+            typeof(TOutputType).AssertIsValidShaderType();
             string fullPathToCgFile = GetFullPathToCgFile(cgFile);
-            var functionToTest = new TestableGPUFunction(functionName, fullPathToCgFile, typeof(TOutput), inputArguments);
+            var functionToTest = new GPUFunctionUnderTest(functionName, fullPathToCgFile, typeof(TOutputType), inputArguments);
 
-            var outputBuffer = ComputeBufferProperty.Construct<TOutput>(ComputeShaderForTesting.OutputBufferVariableName, 1);
+            var outputBuffer = ComputeBufferProperty.Construct<TOutputType>(ComputeShaderForTesting.OutputBufferVariableName, 1);
 
             BuildAndSetInputBuffersForInput(inputArguments, out List<ComputeBufferProperty> inputBuffers);
 
@@ -133,7 +145,7 @@ namespace pbuddy.ShaderUtility.EditorScripts
             inputBuffers.ForEach(bufferProperty => bufferProperty.Buffer.Dispose());
             outputBuffer.Buffer.Dispose();
         }
-        
+    
         private static string GetFullPathToCgFile(string cgFile)
         {
             string cgFileName = Path.GetFileName(cgFile).RemoveSubString(CgExtension);
@@ -171,20 +183,20 @@ namespace pbuddy.ShaderUtility.EditorScripts
             }
         }
 
-        private static ComputeShader GetDebugComputeShaderToTestFunction(TestableGPUFunction function)
+        private static ComputeShader GetDebugComputeShaderToTestFunction(GPUFunctionUnderTest functionUnderTest)
         {
-            if (ComputeShaderByFunctionItTests.TryGetValue(function, out ComputeShader computeShader))
+            if (ComputeShaderByFunctionItTests.TryGetValue(functionUnderTest, out ComputeShader computeShader))
             {
                 return computeShader;
             }
             
             Directory.CreateDirectory(GeneratedComputeShadersDirectory);
-            string generatedComputeShaderFileName = $"{GeneratedFileNamePrefix}{function.FunctionUnderTestName}_{function.GetHashCode()}";
+            string generatedComputeShaderFileName = $"{GeneratedFileNamePrefix}{functionUnderTest.FunctionUnderTestName}_{functionUnderTest.GetHashCode()}";
             string generatedFileFullPath = Path.Combine(GeneratedComputeShadersDirectory, $"{generatedComputeShaderFileName}{GeneratedFileExtension}");
 
             using (var file = new StreamWriter(File.Create(generatedFileFullPath)))
             {
-                string computeShaderContents = ComputeShaderForTesting.BuildNewForFunction(function);
+                string computeShaderContents = ComputeShaderForTesting.BuildNewForFunction(functionUnderTest);
                 file.Write(computeShaderContents);
             }
             
@@ -196,11 +208,11 @@ namespace pbuddy.ShaderUtility.EditorScripts
         }
         
         private static void DispatchDebugComputeShader(ComputeShader computeShader,
-                                                       TestableGPUFunction function,
+                                                       GPUFunctionUnderTest functionUnderTest,
                                                        List<ComputeBufferProperty> inputs,
                                                        ComputeBufferProperty output)
         {
-            int kernelIndex = computeShader.FindKernel($"{ComputeShaderForTesting.KernelPrefix}{function.FunctionUnderTestName}");
+            int kernelIndex = computeShader.FindKernel($"{ComputeShaderForTesting.KernelPrefix}{functionUnderTest.FunctionUnderTestName}");
             void SetBufferOnShader(ComputeBufferProperty bufferProperty) => computeShader.SetBuffer(kernelIndex, bufferProperty.PropertyName, bufferProperty.Buffer);
             inputs.ForEach(SetBufferOnShader);
             SetBufferOnShader(output);

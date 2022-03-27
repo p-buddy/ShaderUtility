@@ -2,7 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-
+using System.Text.RegularExpressions;
 using UnityEngine;
 using UnityEngine.Assertions;
 
@@ -12,45 +12,59 @@ using static pbuddy.LoggingUtility.RuntimeScripts.ContextProvider;
 
 namespace pbuddy.ShaderUtility.EditorScripts
 {
+    /// <summary>
+    /// 
+    /// </summary>
     public static class ComputeShaderForTesting
     {
-        public static bool TryGetTestedFunctionFromFile(string fullPathToFile, out TestableGPUFunction testableGPUFunction)
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="fullPathToFile"></param>
+        /// <param name="gpuFunctionUnderTest"></param>
+        /// <returns></returns>
+        public static bool TryGetTestedFunctionFromFile(string fullPathToFile, out GPUFunctionUnderTest gpuFunctionUnderTest)
         {
             List<string> lines = File.ReadLines(fullPathToFile).ToList();
-            string saveData = String.Join("", lines.GetSection(SaveDataSection));
+            string saveData = String.Join("", lines.GetSection(SaveDataSectionIdentifiers));
             try
             {
-                testableGPUFunction = TestableGPUFunction.FromSaveData(saveData);
-                return testableGPUFunction != null;
+                gpuFunctionUnderTest = GPUFunctionUnderTest.FromSaveData(saveData);
+                return gpuFunctionUnderTest != null;
             }
             catch (Exception e)
             {
-                Debug.LogWarning($"{Context()}Failed to construct {nameof(TestableGPUFunction)} from {Path.GetFileName(fullPathToFile)}. The following exception was thrown: {e}");
-                testableGPUFunction = default;
+                Debug.LogWarning($"{Context()} Failed to construct {nameof(GPUFunctionUnderTest)} from {Path.GetFileName(fullPathToFile)}. The following exception was thrown: {e}");
+                gpuFunctionUnderTest = default;
                 return false;
             }
         }
         
-        public static string BuildNewForFunction(TestableGPUFunction functionToTest)
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="functionUnderTestToTest"></param>
+        /// <returns></returns>
+        public static string BuildNewForFunction(GPUFunctionUnderTest functionUnderTestToTest)
         {
             List<string> lines = TemplateLinesForEditing;
             TemplateToReplace[] replacements =
             {
-                new TemplateToReplace(OutputTypeIdentifier, functionToTest.OutputType.GetShaderTypeName()),
-                new TemplateToReplace(FunctionToDebugIdentifier, functionToTest.FunctionUnderTestName),
-                new TemplateToReplace(ShaderFilePathIdentifier, functionToTest.FullPathToFileContainingFunction.SubstringAfter("Assets")),
-                new TemplateToReplace(InputArgumentsIdentifier, functionToTest.FunctionArguments.ToInputArgumentsString()),
+                new TemplateToReplace(OutputTypeIdentifier, functionUnderTestToTest.OutputType.GetShaderTypeName()),
+                new TemplateToReplace(FunctionToDebugIdentifier, functionUnderTestToTest.FunctionUnderTestName),
+                new TemplateToReplace(ShaderFilePathIdentifier, functionUnderTestToTest.FullPathToFileContainingFunction.SubstringAfter("Assets")),
+                new TemplateToReplace(InputArgumentsIdentifier, functionUnderTestToTest.FunctionArguments.ToInputArgumentsString()),
             };
             lines.ReplaceTemplates(replacements);
             
-            IGPUFunctionArguments functionArguments = functionToTest.FunctionArguments;
+            IGPUFunctionArguments functionArguments = functionUnderTestToTest.FunctionArguments;
             (Section section, string[] lines)[] addToSectionAndRemoveIdentifiers =
             {
-                (InputBufferDeclarationSection, functionArguments.ToInputBufferDeclarationsString()),
-                (InOutVariableDeclarationSection, functionArguments.ToInOutVariableDeclarationsString()),
-                (InOutVariableCollectionSection, functionArguments.ToAssignmentOfInOutVariablesString()),
-                (LengthDeclarationSection, functionArguments.ToInputBufferLengthDeclarationsString()),
-                (ArrayVariableDeclarationSection, functionArguments.ToArrayVariableDeclarationsString()),
+                (InputBufferDeclarationSectionIdentifiers, functionArguments.ToInputBufferDeclarationsString()),
+                (InOutVariableDeclarationSectionIdentifiers, functionArguments.ToInOutVariableDeclarationsString()),
+                (InOutVariableCollectionSectionIdentifiers, functionArguments.ToAssignmentOfInOutVariablesString()),
+                (LengthDeclarationSectionIdentifiers, functionArguments.ToInputBufferLengthDeclarationsString()),
+                (ArrayVariableDeclarationSectionIdentifiers, functionArguments.ToArrayVariableDeclarationsString()),
             };
             
             foreach ((Section section, string[] lines) sectionAddition in addToSectionAndRemoveIdentifiers)
@@ -64,21 +78,21 @@ namespace pbuddy.ShaderUtility.EditorScripts
                 lines.ReplaceSectionIdentifiers(sectionAddition.section, String.Empty);
             }
 
-            lines.AddToEndOfSection(SaveDataSection, functionToTest.GetSaveData());
-            lines.ReplaceSectionIdentifiers(OutputBufferDeclarationSection, String.Empty);
+            lines.AddToEndOfSection(SaveDataSectionIdentifiers, functionUnderTestToTest.GetSaveData());
+            lines.ReplaceSectionIdentifiers(OutputBufferDeclarationSectionIdentifiers, String.Empty);
             lines.RemoveMultipleEmptyLines();
             
             return String.Join(Environment.NewLine, lines);
         }
         
         #region Template Sections
-        private static readonly Section SaveDataSection = new Section("BEGIN SAVE DATA SECTION", "END SAVE DATA SECTION");
-        private static readonly Section InputBufferDeclarationSection = new Section("BEGIN INPUT SECTION", "END INPUT SECTION");
-        private static readonly Section OutputBufferDeclarationSection = new Section("BEGIN OUTPUT SECTION", "END OUTPUT SECTION");
-        private static readonly Section InOutVariableDeclarationSection = new Section("BEGIN DECLARE IN/OUT VARIABLES", "END DECLARE IN/OUT VARIABLES");
-        private static readonly Section InOutVariableCollectionSection = new Section("BEGIN COLLECT IN/OUT VARIABLES", "END COLLECT IN/OUT VARIABLES");
-        private static readonly Section ArrayVariableDeclarationSection = new Section("BEGIN DECLARE ARRAY VARIABLES", "END DECLARE ARRAY VARIABLES");
-        private static readonly Section LengthDeclarationSection = new Section("BEGIN DECLARE LENGTHS", "END DECLARE LENGTHS");
+        private static readonly Section SaveDataSectionIdentifiers = new Section("BEGIN SAVE DATA SECTION", "END SAVE DATA SECTION");
+        private static readonly Section InputBufferDeclarationSectionIdentifiers = new Section("BEGIN INPUT SECTION", "END INPUT SECTION");
+        private static readonly Section OutputBufferDeclarationSectionIdentifiers = new Section("BEGIN OUTPUT SECTION", "END OUTPUT SECTION");
+        private static readonly Section InOutVariableDeclarationSectionIdentifiers = new Section("BEGIN DECLARE IN/OUT VARIABLES", "END DECLARE IN/OUT VARIABLES");
+        private static readonly Section InOutVariableCollectionSectionIdentifiers = new Section("BEGIN COLLECT IN/OUT VARIABLES", "END COLLECT IN/OUT VARIABLES");
+        private static readonly Section ArrayVariableDeclarationSectionIdentifiers = new Section("BEGIN DECLARE ARRAY VARIABLES", "END DECLARE ARRAY VARIABLES");
+        private static readonly Section LengthDeclarationSectionIdentifiers = new Section("BEGIN DECLARE LENGTHS", "END DECLARE LENGTHS");
         #endregion Template Sections
 
         #region Template Identifiers
@@ -98,41 +112,7 @@ namespace pbuddy.ShaderUtility.EditorScripts
         private const string ArrayVariableSuffix = "Array";
         #endregion Generated Text
 
-        private static readonly string Template = 
-$@"#include ""{ShaderFilePathIdentifier}""
-#pragma kernel {KernelPrefix}{FunctionToDebugIdentifier}
-
-/* {InputBufferDeclarationSection.SectionOpen} */
-/* {InputBufferDeclarationSection.SectionClose} */
-
-/* {LengthDeclarationSection.SectionOpen} */
-/* {LengthDeclarationSection.SectionClose} */
-
-/* {OutputBufferDeclarationSection.SectionOpen} */
-RWStructuredBuffer<{OutputTypeIdentifier}> {OutputBufferVariableName};
-/* {OutputBufferDeclarationSection.SectionClose} */
-
-[numthreads(1,1,1)]
-void {KernelPrefix}{FunctionToDebugIdentifier} ()
-{{
-    /* {InOutVariableDeclarationSection.SectionOpen} */
-    /* {InOutVariableDeclarationSection.SectionClose} */
-
-    /* {ArrayVariableDeclarationSection.SectionOpen} */
-    /* {ArrayVariableDeclarationSection.SectionClose} */
-
-    {OutputBufferVariableName}[0] = {FunctionToDebugIdentifier}({InputArgumentsIdentifier});
-
-    /* {InOutVariableCollectionSection.SectionOpen} */
-    /* {InOutVariableCollectionSection.SectionClose} */
-}}
-/* {SaveDataSection} */";
-
-        private static readonly string[] TemplateLinesArray = Template.Split(new[]
-                                                                             {
-                                                                                 Environment.NewLine
-                                                                             },
-                                                                             StringSplitOptions.RemoveEmptyEntries);
+        private static readonly string[] TemplateLinesArray = Regex.Split(Template, "\r\n|\r|\n");
         private static List<string> TemplateLinesForEditing => TemplateLinesArray.ToList();
 
         private static string ToLocalReadWriteVariable(this IGPUFunctionArgument argument, int inputIndex)
@@ -240,5 +220,35 @@ void {KernelPrefix}{FunctionToDebugIdentifier} ()
         {
             return $"StructuredBuffer<{type.GetShaderTypeName()}> {variableName};";
         }
+        
+        private static readonly string Template = 
+            $@"#include ""{ShaderFilePathIdentifier}""
+#pragma kernel {KernelPrefix}{FunctionToDebugIdentifier}
+
+/* {InputBufferDeclarationSectionIdentifiers.SectionOpen} */
+/* {InputBufferDeclarationSectionIdentifiers.SectionClose} */
+
+/* {LengthDeclarationSectionIdentifiers.SectionOpen} */
+/* {LengthDeclarationSectionIdentifiers.SectionClose} */
+
+/* {OutputBufferDeclarationSectionIdentifiers.SectionOpen} */
+RWStructuredBuffer<{OutputTypeIdentifier}> {OutputBufferVariableName};
+/* {OutputBufferDeclarationSectionIdentifiers.SectionClose} */
+
+[numthreads(1,1,1)]
+void {KernelPrefix}{FunctionToDebugIdentifier} ()
+{{
+    /* {InOutVariableDeclarationSectionIdentifiers.SectionOpen} */
+    /* {InOutVariableDeclarationSectionIdentifiers.SectionClose} */
+
+    /* {ArrayVariableDeclarationSectionIdentifiers.SectionOpen} */
+    /* {ArrayVariableDeclarationSectionIdentifiers.SectionClose} */
+
+    {OutputBufferVariableName}[0] = {FunctionToDebugIdentifier}({InputArgumentsIdentifier});
+
+    /* {InOutVariableCollectionSectionIdentifiers.SectionOpen} */
+    /* {InOutVariableCollectionSectionIdentifiers.SectionClose} */
+}}
+/* {SaveDataSectionIdentifiers} */";
     }
 }
