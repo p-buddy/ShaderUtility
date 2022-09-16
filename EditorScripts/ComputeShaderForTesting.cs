@@ -50,10 +50,10 @@ namespace pbuddy.ShaderUtility.EditorScripts
             List<string> lines = TemplateLinesForEditing;
             TemplateToReplace[] replacements =
             {
-                new TemplateToReplace(OutputTypeIdentifier, functionUnderTestToTest.OutputType.GetShaderTypeName()),
-                new TemplateToReplace(FunctionToDebugIdentifier, functionUnderTestToTest.FunctionUnderTestName),
-                new TemplateToReplace(ShaderFilePathIdentifier, functionUnderTestToTest.FullPathToFileContainingFunction.SubstringAfter("Assets")),
-                new TemplateToReplace(InputArgumentsIdentifier, functionUnderTestToTest.FunctionArguments.ToInputArgumentsString()),
+                new(OutputTypeIdentifier, functionUnderTestToTest.OutputType.GetShaderTypeName()),
+                new(FunctionToDebugIdentifier, functionUnderTestToTest.FunctionUnderTestName),
+                new(ShaderFilePathIdentifier, functionUnderTestToTest.FullPathToFileContainingFunction.SubstringAfter("Assets")),
+                new(InputArgumentsIdentifier, functionUnderTestToTest.FunctionArguments.ToInputArgumentsString()),
             };
             lines.ReplaceTemplates(replacements);
             
@@ -86,13 +86,13 @@ namespace pbuddy.ShaderUtility.EditorScripts
         }
         
         #region Template Sections
-        private static readonly SectionIdentifiers SaveDataSectionIdentifiers = new SectionIdentifiers("BEGIN SAVE DATA SECTION", "END SAVE DATA SECTION");
-        private static readonly SectionIdentifiers InputBufferDeclarationSectionIdentifiers = new SectionIdentifiers("BEGIN INPUT SECTION", "END INPUT SECTION");
-        private static readonly SectionIdentifiers OutputBufferDeclarationSectionIdentifiers = new SectionIdentifiers("BEGIN OUTPUT SECTION", "END OUTPUT SECTION");
-        private static readonly SectionIdentifiers InOutVariableDeclarationSectionIdentifiers = new SectionIdentifiers("BEGIN DECLARE IN/OUT VARIABLES", "END DECLARE IN/OUT VARIABLES");
-        private static readonly SectionIdentifiers InOutVariableCollectionSectionIdentifiers = new SectionIdentifiers("BEGIN COLLECT IN/OUT VARIABLES", "END COLLECT IN/OUT VARIABLES");
-        private static readonly SectionIdentifiers ArrayVariableDeclarationSectionIdentifiers = new SectionIdentifiers("BEGIN DECLARE ARRAY VARIABLES", "END DECLARE ARRAY VARIABLES");
-        private static readonly SectionIdentifiers LengthDeclarationSectionIdentifiers = new SectionIdentifiers("BEGIN DECLARE LENGTHS", "END DECLARE LENGTHS");
+        private static readonly SectionIdentifiers SaveDataSectionIdentifiers = new("BEGIN SAVE DATA SECTION", "END SAVE DATA SECTION");
+        private static readonly SectionIdentifiers InputBufferDeclarationSectionIdentifiers = new("BEGIN INPUT SECTION", "END INPUT SECTION");
+        private static readonly SectionIdentifiers OutputBufferDeclarationSectionIdentifiers = new("BEGIN OUTPUT SECTION", "END OUTPUT SECTION");
+        private static readonly SectionIdentifiers InOutVariableDeclarationSectionIdentifiers = new("BEGIN DECLARE IN/OUT VARIABLES", "END DECLARE IN/OUT VARIABLES");
+        private static readonly SectionIdentifiers InOutVariableCollectionSectionIdentifiers = new("BEGIN COLLECT IN/OUT VARIABLES", "END COLLECT IN/OUT VARIABLES");
+        private static readonly SectionIdentifiers ArrayVariableDeclarationSectionIdentifiers = new("BEGIN DECLARE ARRAY VARIABLES", "END DECLARE ARRAY VARIABLES");
+        private static readonly SectionIdentifiers LengthDeclarationSectionIdentifiers = new("BEGIN DECLARE LENGTHS", "END DECLARE LENGTHS");
         #endregion Template Sections
 
         #region Template Identifiers
@@ -112,7 +112,6 @@ namespace pbuddy.ShaderUtility.EditorScripts
         private const string ArrayVariableSuffix = "Array";
         #endregion Generated Text
 
-        private static readonly string[] TemplateLinesArray = Regex.Split(Template, "\r\n|\r|\n");
         private static List<string> TemplateLinesForEditing => TemplateLinesArray.ToList();
 
         private static string ToLocalReadWriteVariable(this IGPUFunctionArgument argument, int inputIndex)
@@ -250,5 +249,7 @@ void {KernelPrefix}{FunctionToDebugIdentifier} ()
     /* {InOutVariableCollectionSectionIdentifiers.SectionClose} */
 }}
 /* {SaveDataSectionIdentifiers} */";
+        
+        private static readonly string[] TemplateLinesArray = Regex.Split(Template, "\r\n|\r|\n");
     }
 }
