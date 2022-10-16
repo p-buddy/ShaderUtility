@@ -2,10 +2,10 @@
     "name": "pbuddy.ShaderUtility.EditorScripts",
     "rootNamespace": "pbuddy.ShaderUtility.EditorScripts",
     "references": [
-        "GUID:d8b63aba1907145bea998dd612889d6b",
-        "GUID:0d1987cca3ae04ca3bc2da4fa5c7d026",
-        "GUID:07de1cb2e4b2147a496cfdd6609c5097",
-        "GUID:4adf49a28cf254764b963047dda613d2"
+        "Unity.Mathematics",
+        "pbuddy.StringUtility.RuntimeScripts",
+        "pbuddy.CodeGenerationUtility.EditorScripts",
+        "pbuddy.LoggingUtility.RuntimeScripts"
     ],
     "includePlatforms": [
         "Editor"
